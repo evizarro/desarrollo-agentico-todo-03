@@ -29,7 +29,12 @@
               <span class="toggle-label sr-only"><%= if (t.Completed) { %>Reabrir<% } else { %>Completar<% } %></span>
             </button>
           </form>
-          <span class="task-title"><%= t.Title %></span>
+          <span class="task-content">
+            <span class="task-title"><%= t.Title %></span>
+            <span class="task-priority <%= if (t.Priority == "high") { %>task-priority-high<% } else if (t.Priority == "low") { %>task-priority-low<% } else { %>task-priority-medium<% } %>">
+              <%= if (t.Priority == "high") { %>Alta<% } else if (t.Priority == "low") { %>Baja<% } else { %>Media<% } %>
+            </span>
+          </span>
           <%= if (t.Completed) { %>
             <span class="task-status">Completada</span>
           <% } %>
@@ -70,11 +75,26 @@
       autocomplete="off"
       <%= if (errors.HasAny()) { %>autofocus aria-invalid="true" aria-describedby="title-error"<% } %>
     >
+    <label for="task-priority" class="sr-only">Prioridad</label>
+    <select
+      id="task-priority"
+      name="priority"
+      <%= if (len(errors.Get("priority")) > 0) { %>aria-invalid="true" aria-describedby="priority-error"<% } %>
+    >
+      <option value="low" <%= if (task.Priority == "low") { %>selected<% } %>>Baja</option>
+      <option value="medium" <%= if (task.Priority != "low" && task.Priority != "high") { %>selected<% } %>>Media</option>
+      <option value="high" <%= if (task.Priority == "high") { %>selected<% } %>>Alta</option>
+    </select>
     <button type="submit" class="button button-primary">Añadir</button>
   </div>
-  <%= if (errors.HasAny()) { %>
+  <%= if (len(errors.Get("title")) > 0) { %>
     <p id="title-error" class="field-error" role="alert">
       <%= for (msg) in errors.Get("title") { %><%= msg %><% } %>
+    </p>
+  <% } %>
+  <%= if (len(errors.Get("priority")) > 0) { %>
+    <p id="priority-error" class="field-error" role="alert">
+      <%= for (msg) in errors.Get("priority") { %><%= msg %><% } %>
     </p>
   <% } %>
 </form>

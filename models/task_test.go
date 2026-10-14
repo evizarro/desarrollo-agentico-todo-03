@@ -69,3 +69,35 @@ func (ms *ModelSuite) Test_Task_Toggle_Persists() {
 	ms.NoError(ms.DB.Find(reloaded, task.ID))
 	ms.True(reloaded.Completed)
 }
+
+func (ms *ModelSuite) Test_Task_Priority_ValidValues() {
+	for _, priority := range []string{PriorityLow, PriorityMedium, PriorityHigh} {
+		task := &Task{Title: "Tarea con prioridad", Priority: priority}
+		verrs, err := ms.DB.ValidateAndCreate(task)
+		ms.NoError(err)
+		ms.False(verrs.HasAny())
+	}
+}
+
+func (ms *ModelSuite) Test_Task_Priority_Invalid() {
+	task := &Task{Title: "Tarea con prioridad inválida", Priority: "urgente"}
+
+	verrs, err := ms.DB.ValidateAndCreate(task)
+	ms.NoError(err)
+	ms.True(verrs.HasAny())
+	ms.Contains(verrs.Get("priority"), "La prioridad debe ser baja, media o alta.")
+}
+
+func (ms *ModelSuite) Test_Task_Priority_Persists() {
+	task := &Task{Title: "Preparar presentación", Priority: PriorityHigh}
+	verrs, err := ms.DB.ValidateAndCreate(task)
+	ms.NoError(err)
+	ms.False(verrs.HasAny())
+
+	task.Priority = PriorityLow
+	ms.NoError(ms.DB.Update(task))
+
+	reloaded := &Task{}
+	ms.NoError(ms.DB.Find(reloaded, task.ID))
+	ms.Equal(PriorityLow, reloaded.Priority)
+}

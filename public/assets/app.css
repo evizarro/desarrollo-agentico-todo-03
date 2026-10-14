@@ -129,12 +129,45 @@ h1 {
   border-bottom: 1px solid var(--color-border);
 }
 
-.task-title {
-  align-self: center;
+.task-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 0.6rem;
+  row-gap: 0.2rem;
   min-width: 0;
   padding: 0.65rem 0;
+}
+
+.task-title {
+  min-width: 0;
   overflow-wrap: anywhere;
   line-height: 1.55;
+}
+
+.task-priority {
+  flex-shrink: 0;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.task-priority-high {
+  color: var(--color-danger);
+  background: #f8e4e2;
+}
+
+.task-priority-medium {
+  color: #8a5a00;
+  background: #fbe9c9;
+}
+
+.task-priority-low {
+  color: #2f6f3e;
+  background: #e1f1e3;
 }
 
 .task-toggle-button,
@@ -265,9 +298,20 @@ input::placeholder {
   color: var(--color-muted);
 }
 
-input[aria-invalid="true"] {
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
   border-color: var(--color-danger);
   background: #fff9f7;
+}
+
+select {
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--color-text);
+  background: #ffffff;
+  border: 1px solid #92928a;
+  border-radius: 6px;
 }
 
 .button {
@@ -307,7 +351,8 @@ input[aria-invalid="true"] {
 
 a:focus-visible,
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
