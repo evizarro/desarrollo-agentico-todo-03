@@ -83,6 +83,130 @@ func (as *ActionSuite) Test_TasksDestroy_PreservesSearchQuery() {
 	as.Equal("/?q=pendiente", res.Header().Get("Location"))
 }
 
+func (as *ActionSuite) Test_TasksToggle_PreservesStatusAndQuery() {
+	task := &models.Task{Title: "Pendiente de completar"}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/tasks/%s/toggle", task.ID).Put(url.Values{"q": {"pendiente"}, "status": {"pending"}})
+	as.Equal(303, res.Code)
+	as.Equal("/?q=pendiente&status=pending", res.Header().Get("Location"))
+}
+
+func (as *ActionSuite) Test_TasksDestroy_PreservesStatusAndQuery() {
+	task := &models.Task{Title: "Tarea que se elimina"}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/tasks/%s?q=pendiente&status=completed", task.ID).Delete()
+	as.Equal(303, res.Code)
+	as.Equal("/?q=pendiente&status=completed", res.Header().Get("Location"))
+}
+
+func (as *ActionSuite) Test_TasksIndex_StatusPendingShowsOnlyPending() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?status=pending").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "Comprar material de oficina")
+	as.Contains(body, "Llamar al gestor")
+	as.NotContains(body, "Publicar la oferta de empleo")
+}
+
+func (as *ActionSuite) Test_TasksIndex_StatusCompletedShowsOnlyCompleted() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?status=completed").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "Publicar la oferta de empleo")
+	as.NotContains(body, "Comprar material de oficina")
+	as.NotContains(body, "Llamar al gestor")
+}
+
+func (as *ActionSuite) Test_TasksIndex_StatusAllShowsEverything() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?status=all").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "Comprar material de oficina")
+	as.Contains(body, "Llamar al gestor")
+	as.Contains(body, "Publicar la oferta de empleo")
+}
+
+func (as *ActionSuite) Test_TasksIndex_UnknownStatusDefaultsToAll() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?status=algo-raro").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "Comprar material de oficina")
+	as.Contains(body, "Llamar al gestor")
+	as.Contains(body, "Publicar la oferta de empleo")
+}
+
+func (as *ActionSuite) Test_TasksIndex_StatusCombinesWithSearch() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?status=pending&q=gestor").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "Llamar al gestor")
+	as.NotContains(body, "Comprar material de oficina")
+	as.NotContains(body, "Publicar la oferta de empleo")
+}
+
+func (as *ActionSuite) Test_TasksIndex_StatusCombinesWithSearch_ExcludesCompletedMatch() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?status=pending&q=oferta").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.NotContains(body, "Publicar la oferta de empleo")
+}
+
+func (as *ActionSuite) Test_TasksIndex_EmptyState_NoPendingTasks() {
+	task := &models.Task{Title: "Única tarea", Completed: true}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/?status=pending").Get()
+	as.Equal(200, res.Code)
+	as.Contains(res.Body.String(), "No tienes tareas pendientes.")
+}
+
+func (as *ActionSuite) Test_TasksIndex_EmptyState_NoCompletedTasks() {
+	task := &models.Task{Title: "Única tarea", Completed: false}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/?status=completed").Get()
+	as.Equal(200, res.Code)
+	as.Contains(res.Body.String(), "No tienes tareas completadas.")
+}
+
+func (as *ActionSuite) Test_TasksIndex_StatusTabsMarkActiveTab() {
+	res := as.HTML("/?status=pending").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, `href="/?status=pending" class="button" aria-current="page">Pendientes</a>`)
+	as.NotContains(body, `href="/" class="button" aria-current="page">Todas</a>`)
+	as.NotContains(body, `href="/?status=completed" class="button" aria-current="page">Completadas</a>`)
+}
+
 func (as *ActionSuite) Test_TasksIndex_OrdersByPriority() {
 	low := &models.Task{Title: "Tarea baja", Priority: models.PriorityLow}
 	high := &models.Task{Title: "Tarea alta", Priority: models.PriorityHigh}

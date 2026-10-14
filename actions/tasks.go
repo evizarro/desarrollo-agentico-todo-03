@@ -16,15 +16,69 @@ import (
 // cada nivel, por fecha de creación ascendente.
 const taskOrder = "CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END, created_at asc, id asc"
 
+// Valores permitidos para el filtro de estado de la lista de tareas.
+const (
+	StatusAll       = "all"
+	StatusPending   = "pending"
+	StatusCompleted = "completed"
+)
+
+// normalizeStatus degrada cualquier valor desconocido o vacío a StatusAll.
+func normalizeStatus(raw string) string {
+	switch raw {
+	case StatusPending, StatusCompleted:
+		return raw
+	default:
+		return StatusAll
+	}
+}
+
+// taskListURL construye la URL de "/" con los parámetros de estado y
+// búsqueda que no sean el valor por defecto.
+func taskListURL(status, query string) string {
+	params := url.Values{}
+	if status != StatusAll {
+		params.Set("status", status)
+	}
+	if query != "" {
+		params.Set("q", query)
+	}
+	if len(params) == 0 {
+		return "/"
+	}
+	return "/?" + params.Encode()
+}
+
+// setStatusTabs expone al contexto el estado activo y las URLs de las tres
+// pestañas de filtro, para que la plantilla no construya query strings.
+//
+// La clave de contexto no puede llamarse "status": buffalo.DefaultContext.Render
+// sobrescribe siempre esa clave con el código de estado HTTP de la respuesta
+// (ver data["status"] = status en default_context.go), pisando cualquier valor
+// que se le asigne antes con c.Set.
+func setStatusTabs(c buffalo.Context, status, query string) {
+	c.Set("taskStatus", status)
+	c.Set("statusAllURL", taskListURL(StatusAll, query))
+	c.Set("statusPendingURL", taskListURL(StatusPending, query))
+	c.Set("statusCompletedURL", taskListURL(StatusCompleted, query))
+}
+
 // TasksIndex muestra la lista de tareas y el formulario de creación.
 func TasksIndex(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 
 	query := strings.TrimSpace(c.Param("q"))
+	status := normalizeStatus(c.Param("status"))
 
 	q := tx.Order(taskOrder)
 	if query != "" {
 		q = q.Where("title ILIKE ?", "%"+query+"%")
+	}
+	switch status {
+	case StatusPending:
+		q = q.Where("completed = ?", false)
+	case StatusCompleted:
+		q = q.Where("completed = ?", true)
 	}
 
 	tasks := models.Tasks{}
@@ -34,6 +88,7 @@ func TasksIndex(c buffalo.Context) error {
 
 	c.Set("tasks", tasks)
 	c.Set("query", query)
+	setStatusTabs(c, status, query)
 	c.Set("task", &models.Task{})
 	c.Set("errors", validate.NewErrors())
 	return c.Render(http.StatusOK, r.HTML("tasks/index.plush.html"))
@@ -65,6 +120,7 @@ func TasksCreate(c buffalo.Context) error {
 
 		c.Set("tasks", tasks)
 		c.Set("query", "")
+		setStatusTabs(c, StatusAll, "")
 		c.Set("task", task)
 		c.Set("errors", verrs)
 		return c.Render(http.StatusUnprocessableEntity, r.HTML("tasks/index.plush.html"))
@@ -138,7 +194,7 @@ func TasksToggle(c buffalo.Context) error {
 		return err
 	}
 
-	return c.Redirect(http.StatusSeeOther, redirectWithQuery(c))
+	return c.Redirect(http.StatusSeeOther, redirectToList(c))
 }
 
 // TasksDestroy elimina una tarea.
@@ -155,15 +211,14 @@ func TasksDestroy(c buffalo.Context) error {
 	}
 
 	c.Flash().Add("success", "Tarea eliminada.")
-	return c.Redirect(http.StatusSeeOther, redirectWithQuery(c))
+	return c.Redirect(http.StatusSeeOther, redirectToList(c))
 }
 
-// redirectWithQuery devuelve "/" preservando el parámetro "q" si venía en la
-// petición, para no perder una búsqueda activa tras completar o borrar una tarea.
-func redirectWithQuery(c buffalo.Context) string {
-	q := strings.TrimSpace(c.Param("q"))
-	if q == "" {
-		return "/"
-	}
-	return "/?q=" + url.QueryEscape(q)
+// redirectToList devuelve "/" preservando "q" y "status" si venían en la
+// petición, para no perder una búsqueda o un filtro activo tras completar o
+// borrar una tarea.
+func redirectToList(c buffalo.Context) string {
+	query := strings.TrimSpace(c.Param("q"))
+	status := normalizeStatus(c.Param("status"))
+	return taskListURL(status, query)
 }

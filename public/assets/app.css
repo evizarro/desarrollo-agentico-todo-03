@@ -115,6 +115,19 @@ body {
   min-width: 10rem;
 }
 
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.status-tabs a[aria-current="page"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
 h1 {
   font-size: 1.7rem;
   font-weight: 750;
