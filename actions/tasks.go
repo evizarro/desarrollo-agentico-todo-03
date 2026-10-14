@@ -32,8 +32,12 @@ func TasksIndex(c buffalo.Context) error {
 		return err
 	}
 
+	pendingCount, completedCount := countByStatus(tasks)
+
 	c.Set("tasks", tasks)
 	c.Set("query", query)
+	c.Set("pendingCount", pendingCount)
+	c.Set("completedCount", completedCount)
 	c.Set("task", &models.Task{})
 	c.Set("errors", validate.NewErrors())
 	return c.Render(http.StatusOK, r.HTML("tasks/index.plush.html"))
@@ -63,8 +67,12 @@ func TasksCreate(c buffalo.Context) error {
 			return err
 		}
 
+		pendingCount, completedCount := countByStatus(tasks)
+
 		c.Set("tasks", tasks)
 		c.Set("query", "")
+		c.Set("pendingCount", pendingCount)
+		c.Set("completedCount", completedCount)
 		c.Set("task", task)
 		c.Set("errors", verrs)
 		return c.Render(http.StatusUnprocessableEntity, r.HTML("tasks/index.plush.html"))
@@ -166,4 +174,15 @@ func redirectWithQuery(c buffalo.Context) string {
 		return "/"
 	}
 	return "/?q=" + url.QueryEscape(q)
+}
+
+// countByStatus devuelve cuántas tareas de la colección están pendientes y
+// cuántas completadas.
+func countByStatus(tasks models.Tasks) (pending int, completed int) {
+	for _, t := range tasks {
+		if t.Completed {
+			completed++
+		}
+	}
+	return len(tasks) - completed, completed
 }
