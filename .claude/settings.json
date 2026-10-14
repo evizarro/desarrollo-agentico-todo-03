@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Write",
+      "Edit",
+      "Bash(git status*)",
+      "Bash(git fetch*)",
+      "Bash(git checkout*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git log*)",
+      "Bash(gh issue view*)",
+      "Bash(gh issue comment*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr view*)",
+      "Bash(go build*)",
+      "Bash(go vet*)",
+      "Bash(go test*)",
+      "Bash(go run*)",
+      "Bash(GO_ENV=test go test*)",
+      "Bash(GO_ENV=test go run*)",
+      "Bash(gofmt*)",
+      "Bash(soda migrate*)"
+    ]
+  }
+}
