@@ -3,6 +3,7 @@ package actions
 import (
 	"net/url"
 	"strings"
+	"time"
 
 	"todo/models"
 
@@ -103,6 +104,34 @@ func (as *ActionSuite) Test_TasksIndex_OrdersByPriority() {
 	as.True(posHigh >= 0 && posMedium >= 0 && posLow >= 0)
 	as.True(posHigh < posMedium)
 	as.True(posMedium < posLow)
+}
+
+func (as *ActionSuite) Test_TasksIndex_ShowsRelativeAge() {
+	task := &models.Task{Title: "Tarea de hace dos días"}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	twoDaysAgo := time.Now().UTC().AddDate(0, 0, -2)
+	as.NoError(as.DB.RawQuery(
+		"update tasks set created_at = ? where id = ?", twoDaysAgo, task.ID,
+	).Exec())
+
+	res := as.HTML("/").Get()
+	as.Equal(200, res.Code)
+	as.Contains(res.Body.String(), "hace 2 días")
+}
+
+func (as *ActionSuite) Test_TasksIndex_ShowsTodayForRecentTask() {
+	task := &models.Task{Title: "Tarea recién creada"}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/").Get()
+	as.Equal(200, res.Code)
+	body := res.Body.String()
+	as.True(strings.Contains(body, "justo ahora") || strings.Contains(body, "hoy"))
 }
 
 func (as *ActionSuite) Test_TasksCreate_Valid() {

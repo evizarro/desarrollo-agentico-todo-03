@@ -1,6 +1,9 @@
 package actions
 
 import (
+	"time"
+
+	"todo/models"
 	"todo/public"
 	"todo/templates"
 
@@ -26,6 +29,9 @@ func init() {
 			// below and import "github.com/gobuffalo/helpers/forms"
 			// forms.FormKey:     forms.Form,
 			// forms.FormForKey:  forms.FormFor,
+			"timeAgo": func(t time.Time) string {
+				return models.TimeAgo(t, time.Now())
+			},
 		},
 	})
 }

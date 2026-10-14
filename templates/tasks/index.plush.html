@@ -44,6 +44,7 @@
           </form>
           <span class="task-content">
             <span class="task-title"><%= t.Title %></span>
+            <span class="task-age"><%= timeAgo(t.CreatedAt) %></span>
             <span class="task-priority <%= if (t.Priority == "high") { %>task-priority-high<% } else if (t.Priority == "low") { %>task-priority-low<% } else { %>task-priority-medium<% } %>">
               <%= if (t.Priority == "high") { %>Alta<% } else if (t.Priority == "low") { %>Baja<% } else { %>Media<% } %>
             </span>

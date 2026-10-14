@@ -158,6 +158,13 @@ h1 {
   line-height: 1.55;
 }
 
+.task-age {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
 .task-priority {
   flex-shrink: 0;
   padding: 0.15rem 0.55rem;
