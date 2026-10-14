@@ -29,6 +29,60 @@ func (as *ActionSuite) Test_TasksIndex_ListsTasks() {
 	as.Contains(body, "Media")
 }
 
+func (as *ActionSuite) Test_TasksIndex_SearchFindsMatchingTitle() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?q=gestor").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "Llamar al gestor")
+	as.NotContains(body, "Comprar material de oficina")
+	as.NotContains(body, "Publicar la oferta de empleo")
+}
+
+func (as *ActionSuite) Test_TasksIndex_SearchIsCaseInsensitive() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?q=GESTOR").Get()
+	as.Equal(200, res.Code)
+	as.Contains(res.Body.String(), "Llamar al gestor")
+}
+
+func (as *ActionSuite) Test_TasksIndex_SearchNoMatches() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?q=inexistente").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "No se encontraron tareas")
+	as.NotContains(body, "No hay tareas todavía")
+	as.NotContains(body, "Comprar material de oficina")
+}
+
+func (as *ActionSuite) Test_TasksToggle_PreservesSearchQuery() {
+	task := &models.Task{Title: "Pendiente de completar"}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/tasks/%s/toggle", task.ID).Put(url.Values{"q": {"pendiente"}})
+	as.Equal(303, res.Code)
+	as.Equal("/?q=pendiente", res.Header().Get("Location"))
+}
+
+func (as *ActionSuite) Test_TasksDestroy_PreservesSearchQuery() {
+	task := &models.Task{Title: "Tarea que se elimina"}
+	verrs, err := as.DB.ValidateAndCreate(task)
+	as.NoError(err)
+	as.False(verrs.HasAny())
+
+	res := as.HTML("/tasks/%s?q=pendiente", task.ID).Delete()
+	as.Equal(303, res.Code)
+	as.Equal("/?q=pendiente", res.Header().Get("Location"))
+}
+
 func (as *ActionSuite) Test_TasksIndex_OrdersByPriority() {
 	low := &models.Task{Title: "Tarea baja", Priority: models.PriorityLow}
 	high := &models.Task{Title: "Tarea alta", Priority: models.PriorityHigh}

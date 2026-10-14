@@ -1,13 +1,25 @@
 <header class="page-header">
   <h1>Tareas</h1>
+  <form action="/" method="GET" class="task-search" role="search">
+    <label for="task-search" class="sr-only">Buscar tareas</label>
+    <input id="task-search" type="search" name="q" value="<%= query %>" placeholder="Buscar por título…">
+    <button type="submit" class="button">Buscar</button>
+    <%= if (query != "") { %><a href="/" class="button">Limpiar</a><% } %>
+  </form>
   <p class="list-count">
-    <%= len(tasks) %> <%= if (len(tasks) == 1) { %>tarea en tu lista<% } else { %>tareas en tu lista<% } %>
+    <%= if (query != "") { %>
+      <%= len(tasks) %> <%= if (len(tasks) == 1) { %>resultado para<% } else { %>resultados para<% } %> «<%= query %>»
+    <% } else { %>
+      <%= len(tasks) %> <%= if (len(tasks) == 1) { %>tarea en tu lista<% } else { %>tareas en tu lista<% } %>
+    <% } %>
   </p>
 </header>
 
 <section aria-labelledby="list-heading">
   <h2 id="list-heading" class="sr-only">Lista de tareas</h2>
-  <%= if (len(tasks) == 0) { %>
+  <%= if (len(tasks) == 0 && query != "") { %>
+    <p class="empty-state">No se encontraron tareas para «<%= query %>». <a href="/">Ver todas las tareas</a>.</p>
+  <% } else if (len(tasks) == 0) { %>
     <p class="empty-state">No hay tareas todavía. Añade la primera con el formulario.</p>
   <% } else { %>
     <ul class="task-list">
@@ -16,6 +28,7 @@
           <form action="/tasks/<%= t.ID %>/toggle" method="POST" class="task-toggle" data-task-toggle>
             <input type="hidden" name="authenticity_token" value="<%= authenticity_token %>">
             <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="q" value="<%= query %>">
             <button
               type="submit"
               class="task-toggle-button"
@@ -47,6 +60,7 @@
             <form action="/tasks/<%= t.ID %>" method="POST" data-confirm="¿Seguro que quieres eliminar esta tarea?">
               <input type="hidden" name="authenticity_token" value="<%= authenticity_token %>">
               <input type="hidden" name="_method" value="DELETE">
+              <input type="hidden" name="q" value="<%= query %>">
               <button type="submit" class="icon-action icon-danger" aria-label="Eliminar tarea: <%= t.Title %>" title="Eliminar tarea">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5" />

@@ -2,6 +2,7 @@ package actions
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"todo/models"
@@ -19,12 +20,20 @@ const taskOrder = "CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'l
 func TasksIndex(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 
+	query := strings.TrimSpace(c.Param("q"))
+
+	q := tx.Order(taskOrder)
+	if query != "" {
+		q = q.Where("title ILIKE ?", "%"+query+"%")
+	}
+
 	tasks := models.Tasks{}
-	if err := tx.Order(taskOrder).All(&tasks); err != nil {
+	if err := q.All(&tasks); err != nil {
 		return err
 	}
 
 	c.Set("tasks", tasks)
+	c.Set("query", query)
 	c.Set("task", &models.Task{})
 	c.Set("errors", validate.NewErrors())
 	return c.Render(http.StatusOK, r.HTML("tasks/index.plush.html"))
@@ -55,6 +64,7 @@ func TasksCreate(c buffalo.Context) error {
 		}
 
 		c.Set("tasks", tasks)
+		c.Set("query", "")
 		c.Set("task", task)
 		c.Set("errors", verrs)
 		return c.Render(http.StatusUnprocessableEntity, r.HTML("tasks/index.plush.html"))
@@ -128,7 +138,7 @@ func TasksToggle(c buffalo.Context) error {
 		return err
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(http.StatusSeeOther, redirectWithQuery(c))
 }
 
 // TasksDestroy elimina una tarea.
@@ -145,5 +155,15 @@ func TasksDestroy(c buffalo.Context) error {
 	}
 
 	c.Flash().Add("success", "Tarea eliminada.")
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(http.StatusSeeOther, redirectWithQuery(c))
+}
+
+// redirectWithQuery devuelve "/" preservando el parámetro "q" si venía en la
+// petición, para no perder una búsqueda activa tras completar o borrar una tarea.
+func redirectWithQuery(c buffalo.Context) string {
+	q := strings.TrimSpace(c.Param("q"))
+	if q == "" {
+		return "/"
+	}
+	return "/?q=" + url.QueryEscape(q)
 }

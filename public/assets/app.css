@@ -102,6 +102,19 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.task-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.task-search input[type="search"] {
+  flex: 1;
+  min-width: 10rem;
+}
+
 h1 {
   font-size: 1.7rem;
   font-weight: 750;
@@ -278,7 +291,8 @@ h1 {
   line-height: 1;
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="search"] {
   width: 100%;
   min-width: 0;
   min-height: 44px;
