@@ -12,6 +12,8 @@
     <% } else { %>
       <%= len(tasks) %> <%= if (len(tasks) == 1) { %>tarea en tu lista<% } else { %>tareas en tu lista<% } %>
     <% } %>
+    · <%= pendingCount %> <%= if (pendingCount == 1) { %>pendiente<% } else { %>pendientes<% } %>
+    · <%= completedCount %> <%= if (completedCount == 1) { %>completada<% } else { %>completadas<% } %>
   </p>
 </header>
 

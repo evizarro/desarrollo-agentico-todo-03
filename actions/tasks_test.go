@@ -27,6 +27,19 @@ func (as *ActionSuite) Test_TasksIndex_ListsTasks() {
 	as.Contains(body, "Publicar la oferta de empleo")
 	as.Contains(body, "Completada")
 	as.Contains(body, "Media")
+	as.Contains(body, "2 pendientes")
+	as.Contains(body, "1 completada")
+}
+
+func (as *ActionSuite) Test_TasksIndex_CountsReflectSearchFilter() {
+	as.LoadFixture("tres tareas")
+
+	res := as.HTML("/?q=gestor").Get()
+	as.Equal(200, res.Code)
+
+	body := res.Body.String()
+	as.Contains(body, "1 pendiente")
+	as.Contains(body, "0 completadas")
 }
 
 func (as *ActionSuite) Test_TasksIndex_SearchFindsMatchingTitle() {
